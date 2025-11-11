@@ -1,8 +1,8 @@
-// components/FestiveBits.jsx
+// NO "use client" here
+
 export function FestiveWrapper({ children }) {
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* gradient paper background */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(1200px_800px_at_0%_0%,#1a472a_0%,#0b1f16_40%,#0b1f16_100%)]" />
       <div className="absolute inset-0 -z-10 opacity-[0.08] bg-[url('https://images.unsplash.com/photo-1547818330-7aa6e8b0c3df?q=80&w=1600&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay" />
       {children}
@@ -13,12 +13,10 @@ export function FestiveWrapper({ children }) {
 export function RibbonHeader({ title, subtitle }) {
   return (
     <div className="relative mx-auto max-w-2xl text-center">
-      {/* ribbon */}
       <div className="absolute inset-x-0 top-4 -z-10 h-8 bg-[linear-gradient(90deg,#7a1111,#b21e1e,#7a1111)] rounded" />
-      {/* gold badge */}
       <div className="inline-block rounded-full bg-[conic-gradient(from_180deg,#f9e7a3,#caa84a,#f9e7a3)] px-5 py-2 shadow-md ring-1 ring-[#8b6b1f]/30">
         <div className="text-xs tracking-widest text-[#5a4210]">
-          Merry Christmas
+          HOLIDAY EDITION
         </div>
       </div>
       <h1 className="mt-3 font-serif text-4xl sm:text-5xl text-[#f8f4e7] drop-shadow-[0_1px_0_rgba(0,0,0,0.25)]">
@@ -79,13 +77,10 @@ export function CandyButton({ children, variant = "primary", ...props }) {
   );
 }
 
-/** Candy window frame for the wheel */
 export function CandyWindow({ children }) {
   return (
     <div className="relative">
-      {/* candy stripe border */}
       <div className="absolute -inset-[3px] rounded-md bg-[conic-gradient(from_45deg,#fff_0_25%,#ff4d6d_0_50%)] [background-size:10px_10px] -z-10" />
-      {/* soft gold ring */}
       <div className="absolute inset-0 rounded-md ring-1 ring-[#caa84a]/40 pointer-events-none" />
       <div className="rounded-md overflow-hidden bg-white">{children}</div>
     </div>

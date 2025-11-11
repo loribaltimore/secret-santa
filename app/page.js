@@ -1,7 +1,7 @@
 "use client";
-
+import dynamic from "next/dynamic";
+const Snowfall = dynamic(() => import("react-snowfall"), { ssr: false });
 import { useMemo, useRef, useState } from "react";
-import Snowfall from "react-snowfall";
 import {
   FestiveWrapper,
   RibbonHeader,
@@ -125,9 +125,7 @@ export default function SecretSantaPage() {
         <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-emerald-900/30 bg-white/95 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)] backdrop-blur">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <label className="mb-1 block text-sm text-black">
-                Your name
-              </label>
+              <label className="mb-1 block text-sm text-black">Your name</label>
               <div className="relative">
                 <select
                   className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
