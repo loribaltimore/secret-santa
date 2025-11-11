@@ -1,4 +1,20 @@
 "use client";
+import { useEffect } from "react";
+
+// super-light toast
+function Toast({ message, onDone, ms = 2400 }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, ms);
+    return () => clearTimeout(t);
+  }, [onDone, ms]);
+  return (
+    <div className="fixed w-3/4 left-1/2 bottom-6 z-[100] -translate-x-1/2">
+      <div className="rounded-full px-4 py-2 text-sm text-white bg-black/80 backdrop-blur shadow-lg">
+        {message}
+      </div>
+    </div>
+  );
+}
 import dynamic from "next/dynamic";
 const Snowfall = dynamic(() => import("react-snowfall"), { ssr: false });
 import { useMemo, useRef, useState } from "react";
@@ -31,7 +47,11 @@ export default function SecretSantaPage() {
   const [giver, setGiver] = useState("");
   const [recipient, setRecipient] = useState("");
   const [isSpinning, setIsSpinning] = useState(false);
+  const [toast, setToast] = useState("");
 
+  function notify(msg) {
+    setToast(msg);
+  }
   // visual wheel state (unchanged)
   const [offset, setOffset] = useState(0);
   const [duration, setDuration] = useState(0.0);
@@ -54,13 +74,10 @@ export default function SecretSantaPage() {
 
   async function spin() {
     if (!giver) {
-      alert("Select your name first.");
+      notify("Select your name first.");
       return;
     }
-    if (isSpinning) return;
 
-    // try server lock (unchanged)
-    let spun;
     try {
       const response = await fetch("/api/spin", {
         method: "POST",
@@ -68,15 +85,14 @@ export default function SecretSantaPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        spun = data.hasSpun;
-        if (spun) {
+        if (data.hasSpun) {
           setRecipient(ASSIGNMENTS[giver]);
-          alert(`${giver}, you spun and the results are written in stone!`);
+          notify(`${giver}, you spun and the results are written in stone!`);
           return;
         }
       }
     } catch {
-      alert("Tell Dakota this isn't working!");
+      notify("Tell Dakota this isn't working!");
     }
 
     const targetName = findTargetName(giver);
@@ -108,6 +124,7 @@ export default function SecretSantaPage() {
 
   return (
     <FestiveWrapper>
+      {toast ? <Toast message={toast} onDone={() => setToast("")} /> : null}
       {/* gentle snowfall over everything */}
       <div className="pointer-events-none fixed inset-0 z-[5]">
         <Snowfall snowflakeCount={80} style={{ position: "fixed" }} />
