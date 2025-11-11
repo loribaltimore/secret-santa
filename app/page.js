@@ -1,101 +1,236 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useMemo, useRef, useState } from "react";
+import Snowfall from "react-snowfall";
+import {
+  FestiveWrapper,
+  RibbonHeader,
+  GarlandDivider,
+  CandyButton,
+  CandyWindow,
+} from "@/components/FestiveWrapper";
+
+// --- data (unchanged) ---
+const PEOPLE = ["Ellie", "Dakota", "Brian", "Manny", "Tina"];
+
+const ASSIGNMENTS = {
+  Ellie: "Manny",
+  Dakota: "Brian",
+  Brian: "Tina",
+  Manny: "Dakota",
+  Tina: "Ellie",
+};
+
+// --- motion / wheel constants (unchanged) ---
+const EASING = "cubic-bezier(0.18, 0.6, 0.2, 1)";
+const ROW_H = 48; // must match h-12
+const BASE_CYCLES = 8;
+
+export default function SecretSantaPage() {
+  // state (unchanged)
+  const [giver, setGiver] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  // visual wheel state (unchanged)
+  const [offset, setOffset] = useState(0);
+  const [duration, setDuration] = useState(0.0);
+  const [rolling, setRolling] = useState(false);
+  const listRef = useRef(null);
+
+  // long virtual list (unchanged)
+  const ROLLER = useMemo(() => {
+    const copies = 40;
+    const long = [];
+    for (let i = 0; i < copies; i++) long.push(...PEOPLE);
+    return long;
+  }, []);
+
+  function findTargetName(forGiver) {
+    if (ASSIGNMENTS[forGiver]) return ASSIGNMENTS[forGiver];
+    const pool = PEOPLE.filter((p) => p !== forGiver);
+    return pool[Math.floor(Math.random() * pool.length)] || PEOPLE[0];
+  }
+
+  async function spin() {
+    if (!giver) {
+      alert("Select your name first.");
+      return;
+    }
+    if (isSpinning) return;
+
+    // try server lock (unchanged)
+    let spun;
+    try {
+      const response = await fetch("/api/spin", {
+        method: "POST",
+        body: JSON.stringify({ giver }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        spun = data.hasSpun;
+        if (spun) {
+          setRecipient(ASSIGNMENTS[giver]);
+          alert(`${giver}, you spun and the results are written in stone!`);
+          return;
+        }
+      }
+    } catch {
+      alert("Tell Dakota this isn't working!");
+    }
+
+    const targetName = findTargetName(giver);
+    const posInCycle = Math.max(0, PEOPLE.indexOf(targetName));
+    const extraCycles = Math.floor(Math.random() * 3); // 0–2
+    const cycles = BASE_CYCLES + extraCycles;
+    const targetIndex = cycles * PEOPLE.length + posInCycle;
+    const targetOffset = -(targetIndex * ROW_H);
+
+    setIsSpinning(true);
+    setRolling(true);
+
+    const approxRows = cycles * PEOPLE.length;
+    setDuration(2.2 + Math.min(1.8, approxRows / 60));
+
+    requestAnimationFrame(() => setOffset(targetOffset));
+
+    const node = listRef.current;
+    if (node) {
+      const onEnd = () => {
+        setRolling(false);
+        setIsSpinning(false);
+        node.removeEventListener("transitionend", onEnd);
+        setRecipient(targetName);
+      };
+      node.addEventListener("transitionend", onEnd);
+    }
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <FestiveWrapper>
+      {/* gentle snowfall over everything */}
+      <div className="pointer-events-none fixed inset-0 z-[5]">
+        <Snowfall snowflakeCount={80} style={{ position: "fixed" }} />
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <main className="relative z-10 mx-auto max-w-3xl px-4 py-10 sm:py-14">
+        <RibbonHeader
+          title="Secret Santa"
+          subtitle="Pick your name, spin the wheel, and see your recipient."
+        />
+
+        <GarlandDivider />
+
+        {/* Controls Card */}
+        <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-emerald-900/30 bg-white/95 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)] backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label className="mb-1 block text-sm text-black">
+                Your name
+              </label>
+              <div className="relative">
+                <select
+                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  value={giver}
+                  onChange={(e) => {
+                    setGiver(e.target.value);
+                    setRecipient("");
+                    // reset wheel position when changing names
+                    setOffset(0);
+                    setDuration(0);
+                    setRolling(false);
+                  }}
+                >
+                  <option value="">Select…</option>
+                  {PEOPLE.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute -right-2 -top-2 rotate-12 text-xs">
+                  🎄
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <CandyButton
+                onClick={spin}
+                disabled={!giver || isSpinning}
+                aria-label="Spin the wheel"
+              >
+                {isSpinning ? "Spinning…" : "Spin Wheel"}
+              </CandyButton>
+              <CandyButton
+                variant="secondary"
+                onClick={() => {
+                  setRecipient("");
+                  setOffset(0);
+                  setDuration(0);
+                  setRolling(false);
+                }}
+              >
+                Reset
+              </CandyButton>
+            </div>
+          </div>
+        </div>
+
+        {/* Wheel Card */}
+        <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-emerald-900/30 bg-white/95 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.15)] backdrop-blur">
+          <div className="mb-3 text-sm text-black">Drawing</div>
+
+          <CandyWindow>
+            <div className="relative mx-auto w-full max-w-md">
+              {/* highlight band */}
+              <div className="pointer-events-none absolute inset-0 grid grid-rows-[1fr_48px_1fr]">
+                <div className="bg-gradient-to-b from-white/85 to-transparent" />
+                <div className="rounded-md ring-1 ring-neutral-300" />
+                <div className="bg-gradient-to-t from-white/85 to-transparent" />
+              </div>
+
+              {/* viewport (48px = one row) */}
+              <div
+                className="relative h-12 overflow-hidden rounded-md bg-white"
+                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+              >
+                <ul
+                  ref={listRef}
+                  className={`will-change-transform ${
+                    rolling ? "opacity-95 blur-[0.15px]" : ""
+                  }`}
+                  style={{
+                    transform: `translateY(${offset}px)`,
+                    transitionProperty: "transform",
+                    transitionDuration: `${duration}s`,
+                    transitionTimingFunction: EASING,
+                  }}
+                >
+                  {ROLLER.map((name, idx) => (
+                    <li
+                      key={`${name}-${idx}`}
+                      className="h-12 px-3 text-center text-sm leading-[48px]"
+                    >
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </CandyWindow>
+
+          {/* Result */}
+          <div className="mt-6">
+            <div className="text-xs uppercase tracking-wide text-black">
+              Your recipient
+            </div>
+            <div className="mt-1 text-lg font-semibold text-emerald-900">
+              {recipient || "—"}
+            </div>
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+    </FestiveWrapper>
   );
 }
